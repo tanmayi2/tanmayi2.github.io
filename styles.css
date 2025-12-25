@@ -28,7 +28,6 @@ a {
     transition: color 0.3s ease;
 }  
 
-
 a:hover {
     color: var(--blue);
     text-decoration: none;
@@ -36,28 +35,33 @@ a:hover {
     transition: color 0.3s ease;
 }
 
-/* a {
-    color: var(--purple);
-    text-decoration: none;
-}
 
-a:hover {
-    text-decoration: underline;
-} */
- 
 
 /* Sections */
+
 .section {
-    height: 100vh;
     width: 100vw;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 0 10%;
+    padding: 8% 10%;
+    color: var(--text-color);
 }
 
 .section-content {
-    text-align: center;
+    text-align: left;
     max-width: 800px;
     width: 100%;
+    color: var(--text-color);
+}
+
+.contact-links {
+    text-align: right;
+}
+
+.contact-links a img {
+    transition: opacity 0.3s ease;
+}
+.contact-links a:hover img {
+    opacity: 0.6; /* transparent */
 }
