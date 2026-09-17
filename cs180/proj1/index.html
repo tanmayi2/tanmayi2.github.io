@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>project 1 — cs 180</title>
+    <link rel="stylesheet" href="../../styles.css">
+    <link rel="stylesheet" href="../cs180.css">
+</head>
+<body>
+    <header>
+    </header>
+
+    <main>
+        <section class="section">
+            <div class="section-content">
+                <a class="back-link" href="../index.html">← cs 180</a>
+
+                <h1 class="course-title">project 1</h1>
+                <p class="course-subtitle">
+                    images of the russian empire
+                </p>
+
+                <section class="part">
+                    <h2 class="part-title">Intro</h2>
+                    <p>
+                    This project aims to colorize the <a href="https://www.loc.gov/collections/prokudin-gorskii/">Prokudin-Gorskii</a> photo collection through a single scaling and multi scaling alignment approach.
+
+                    Sergei Mikhailovich Prokudin-Gorskii collected 3 exposures of the same scene through red, green, and blue filters. The images were then combined to create a color image. However, due to the time delay between exposures, the images are misaligned and need to be aligned before they can be combined.
+
+                    Below is an example of the 3 exposures and the final colorized image after alignment.
+                    </p>
+                    <div class="figure-grid cols-1-3">
+                        <figure>
+                            <img src="images/melons.jpg" width="3770" height="9724">
+                            <figcaption>3 exposures</figcaption>
+                        </figure>
+                        <figure>
+                            <img src="images/multi_scale_melons.jpg" width="3770" height="3241">
+                            <figcaption>aligned</figcaption>
+                        </figure>
+                    </div>
+
+                </section>
+
+                <section class="part">
+                    <h2 class="part-title">Part 1: Single Scale Alignment</h2>
+                    <p>
+                        The naive implementation of the alignment algorithm is to use a brute force approach to find the best alignment of the images. The algorithm iterates through all possible shifts of the images and computes a score for each shift. The shift with the best score is chosen as the best alignment.
+                        An optimization to this approach is to simply search through a smaller range of shifts like 
+                        I explored using both normalized cross-correlation (NCC) scoring and Euclidean L2 distance, but found that NCC scoring was more robust to noise and produced better results. The final implementation of the single scale alignment algorithm uses NCC scoring to find the best alignment of the images.
+                        <br>
+                        <br>
+                        Additionally, I found that cropping the images to remove the borders improved the alignment results. The borders of the images contain a lot of noise and can negatively impact the alignment results. By cropping the images (I chose a 10% crop), we can remove the noise and improve the alignment results.
+                        The way I implemented the cropping was to simply crop the images by a fixed percentage of the image size, align the cropped images, and then apply the same shift to the original images. This way, we can align the images without losing any information from the original images.
+                    </p>
+                    <div class="figure-grid cols-2">
+                        <figure>
+                            <img src="images/cathedral_no_crop.jpg" width="1050" height="1400">
+                            <figcaption>no cropping</figcaption>
+                        </figure>
+                        <figure>
+                            <img src="images/multi_scale_cathedral.jpg" width="1050" height="1400">
+                            <figcaption>cropped 10%</figcaption>
+                        </figure>
+                    </div>
+                    <p>
+                        <br>
+                        Below are the results of the single scale alignment algorithm on the 'cathedral.jpg', 'monastery.jpg', and 'tobolsk.jpg' images and their respective shifts.
+                    </p>
+                    <div class="figure-grid cols-3">
+                        <figure>
+                            <img src="images/single_scale_cathedral.jpg" width="1050" height="1400">
+                            <figcaption>green: (5, 2), red: (12, 3)</figcaption>
+                        </figure>
+                        <figure>
+                            <img src="images/single_scale_monastery.jpg" width="1050" height="1400">
+                            <figcaption>green: (-3, 2), red: (3, 2)</figcaption>
+                        </figure>
+                        <figure>
+                            <img src="images/single_scale_tobolsk.jpg" width="1050" height="1400">
+                            <figcaption>green: (3, 3), red: (6, 3)</figcaption>
+                        </figure>
+                    </div>
+                    
+                </section>
+
+                <section class="part">
+                    <h2 class="part-title">Part 2: Multi Scale Alignment</h2>
+                    <p>
+                        A less naive approach to the alignment algorithm is to use a multi scale approach to find the best alignment of the images. The algorithm first downsamples the images to a smaller size and then aligns the images at that scale. The best alignment at that scale is then used as the starting point for the next scale. This process is repeated until the images are aligned at the original scale.
+                        <br>
+                        <br>
+                        Originally, this method worked very well on the smaller images, but when I tried to apply it to the larger images, I found that the alignment took up to 6 minutes per image. I realized that the search space for the larger images was too large and that I needed to limit the search space to a smaller range of shifts. 
+                        I found that using a coarse-to-fine approach significantly reduced the computation time while maintaining alignment quality. For the top level of the pyramid, I searched through a range of shifts of [-20, 20] pixels (in the downsampled image), and for the rest of the levels I only searched through a range of [-2, 2] pixels. This way, we can align the images in a reasonable amount of time while still maintaining alignment quality.
+                        Below are the results of the multi scale alignment algorithm on the 14 given images in the Prokudin-Gorskii collection and 3 images I selected. All images were aligned in under 1 minute.
+                    </p>
+                    <div class="figure-grid cols-3">
+                        <figure>
+                            <img src="images/multi_scale_cathedral.jpg" width="390" height="341">
+                            <figcaption>cathedral<br>green: (5, 2), red: (12, 3)</figcaption>
+                        </figure>
+                        <figure>
+                            <img src="images/multi_scale_monastery.jpg" width="391" height="341">
+                            <figcaption>monastery<br>green: (-3, 2), red: (3, 2)</figcaption>
+                        </figure>
+                        <figure>
+                            <img src="images/multi_scale_tobolsk.jpg" width="396" height="341">
+                            <figcaption>tobolsk<br>green: (3, 3), red: (6, 3)</figcaption>
+                        </figure>
+                        <figure>
+                            <img src="images/multi_scale_wharf.jpg" width="3761" height="3244">
+                            <figcaption>wharf<br>green: (15, -7), red: (82, -16)</figcaption>
+                        </figure>
+                        <figure>
+                            <img src="images/multi_scale_religous_painting.jpg" width="3742" height="3193">
+                            <figcaption>religous_painting<br>green: (27, 3), red: (68, 7)</figcaption>
+                        </figure>
+                        <figure>
+                            <img src="images/multi_scale_church.jpg" width="3634" height="3202">
+                            <figcaption>church<br>green: (25, 4), red: (58, -4)</figcaption>
+                        </figure>
+                        <figure>
+                            <img src="images/multi_scale_three_generations.jpg" width="3714" height="3209">
+                            <figcaption>three_generations<br>green: (53, 14), red: (112, 11)</figcaption>
+                        </figure>
+                        <figure>
+                            <img src="images/multi_scale_melons.jpg" width="3770" height="3241">
+                            <figcaption>melons<br>green: (81, 10), red: (174, 12)</figcaption>
+                        </figure>
+                        <figure>
+                            <img src="images/multi_scale_icon.jpg" width="3741" height="3244">
+                            <figcaption>icon<br>green: (41, 17), red: (89, 23)</figcaption>
+                        </figure>
+                        <figure>
+                            <img src="images/multi_scale_siren.jpg" width="3817" height="3250">
+                            <figcaption>siren<br>green: (49, -6), red: (95, -25)</figcaption>
+                        </figure>
+                        <figure>
+                            <img src="images/multi_scale_self_portrait.jpg" width="3810" height="3251">
+                            <figcaption>self_portrait<br>green: (78, 29), red: (174, 36)</figcaption>
+                        </figure>
+                        <figure>
+                            <img src="images/multi_scale_harvesters.jpg" width="3683" height="3218">
+                            <figcaption>harvesters<br>green: (59, 16), red: (124, 13)</figcaption>
+                        </figure>
+                        <figure>
+                            <img src="images/multi_scale_ilemselga.jpg" width="3800" height="3270">
+                            <figcaption>ilemselga<br>green: (40, 7), red: (130, 11)</figcaption>
+                        </figure>
+                        <figure>
+                            <img src="images/multi_scale_emir.jpg" width="3702" height="3209">
+                            <figcaption>emir<br>green: (49, 24), red: (96, -174)</figcaption>
+                        </figure>
+                        <figure>
+                            <img src="images/multi_scale_river.jpg" width="3780" height="3228">
+                            <figcaption>river<br>green: (37, 21), red: (81, 34)</figcaption>
+                        </figure>
+                        <figure>
+                            <img src="images/multi_scale_lady.jpg" width="3719" height="3231">
+                            <figcaption>lady<br>green: (38, 21), red: (76, 35)</figcaption>
+                        </figure>
+                        <figure>
+                            <img src="images/multi_scale_cabin.jpg" width="3727" height="3204">
+                            <figcaption>cabin<br>green: (22, 13), red: (93, 25)</figcaption>
+                        </figure>
+                    </div>
+                </section>
+
+                <section class="part">
+                    <h2 class="part-title">Part 3: Limitations / Failure Cases</h2>
+                    <p>
+                        You may have noticed that all but one of the previous images were aligned well. The outlier case is the Emir of Bukhara image as the three channels look quite displaced from each other. 
+                        This is likely due to the fact that the three exposures have largely different intensities and the NCC scoring is not robust to this. 
+                        Some sort of edge detection may be a better approach to align the images.
+                    </p>
+                    <div class="figure-grid cols-1-3">
+                        <figure>
+                            <img src="images/emir.jpg" width="3770" height="9724">
+                            <figcaption>3 exposures</figcaption>
+                        </figure>
+                        <figure>
+                            <img src="images/multi_scale_emir.jpg" width="3770" height="3241">
+                            <figcaption>misaligned</figcaption>
+                        </figure>
+                    </div>
+                </section>
+            </div>
+        </section>
+    </main>
+
+</body>
+</html>
