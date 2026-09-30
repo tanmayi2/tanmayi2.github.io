@@ -91,9 +91,64 @@ p + .figure-grid {
     margin-top: 1.75rem;
 }
 
+/* Consecutive paragraphs, back-to-back grids, and prose that follows a
+   grid all need their own gap since margins are reset. */
+.part p + p {
+    margin-top: 1rem;
+}
+
+.figure-grid + .figure-grid {
+    margin-top: 1rem;
+}
+
+.figure-grid + p {
+    margin-top: 1.5rem;
+}
+
+/* Code snippets and written-out filters live in grid cells beside images.
+   The box stretches to the row height so it lines up with the pictures. */
+figure.code,
+figure.filter {
+    display: flex;
+    flex-direction: column;
+}
+
+figure.code pre,
+figure.filter pre {
+    flex: 1;
+    display: flex;
+    overflow-x: auto;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.75rem;
+    line-height: 1.5;
+}
+
+/* Only code gets the gray box; filters read as plain text. */
+figure.code pre {
+    background-color: #f6f8fa;
+    border: 1px solid #e4e7eb;
+    border-radius: 8px;
+    padding: 0.75rem;
+}
+
+figure.filter pre {
+    font-size: 0.85rem;
+}
+
+figure.code code,
+figure.filter code {
+    font: inherit;
+}
+
+/* Filters are short, so center them in the box; code stays top-left. */
+figure.filter pre code {
+    margin: auto;
+}
+
 .figure-grid figure {
     flex: 1 1 300px;
     margin: 0;
+    min-width: 0; /* let code boxes scroll instead of widening their column */
 }
 
 /* Force an exact column count regardless of image width. */
@@ -107,6 +162,17 @@ p + .figure-grid {
     grid-template-columns: repeat(2, 1fr);
 }
 
+.figure-grid.cols-4 {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+}
+
+/* Five small results in one row, e.g. an original beside its x and y derivatives. */
+.figure-grid.cols-5 {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+}
+
 /* A stacked 3-exposure strip next to its colorized result. The strip is
    three times taller than the result at the same width, so giving the
    result three times the column width makes both images the same height. */
@@ -115,17 +181,27 @@ p + .figure-grid {
     grid-template-columns: 1fr 3fr;
 }
 
-/* A single figure that should take half the column instead of all of it.
-   Percentage-based, so it keeps scaling with the page. */
+/* A single figure that should take half the column instead of all of it,
+   centered on the page. Percentage-based, so it keeps scaling with the page. */
+.figure-grid.half {
+    justify-content: center;
+}
+
 .figure-grid.half figure {
     flex: 0 1 50%;
     max-width: 50%;
 }
 
+.figure-grid.half figcaption {
+    text-align: center;
+}
+
 @media (max-width: 600px) {
     .figure-grid.cols-3,
     .figure-grid.cols-2,
-    .figure-grid.cols-1-3 {
+    .figure-grid.cols-1-3,
+    .figure-grid.cols-4,
+    .figure-grid.cols-5 {
         grid-template-columns: 1fr;
     }
 
@@ -140,6 +216,35 @@ p + .figure-grid {
     height: auto;
     border-radius: 14px;
     display: block;
+}
+
+/* Interactive zoom on hybrid images (see proj2/zoom.js). The stage keeps the
+   image's footprint and clips it, so zooming in crops toward the center and
+   zooming out shrinks it in place, like stepping back from the screen. */
+.zoom-stage {
+    overflow: hidden;
+    border-radius: 14px;
+}
+
+.zoom-stage img {
+    transform: scale(var(--zoom, 1));
+    transform-origin: center;
+    cursor: zoom-in;
+}
+
+.zoom-control {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    color: #6b7480;
+    font-size: 0.8rem;
+}
+
+.zoom-control input[type="range"] {
+    flex: 1;
+    min-width: 0;
+    accent-color: var(--purple);
 }
 
 .figure-grid figcaption {

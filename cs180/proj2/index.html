@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>project 2 — cs 180</title>
+    <link rel="stylesheet" href="../../styles.css">
+    <link rel="stylesheet" href="../cs180.css">
+    <script src="zoom.js" defer></script>
+</head>
+<body>
+    <header>
+    </header>
+
+    <main>
+        <section class="section">
+            <div class="section-content">
+                <a class="back-link" href="../index.html">← cs 180</a>
+
+                <h1 class="course-title">project 2</h1>
+                <p class="course-subtitle">
+                    fun with filters and frequencies
+                </p>
+
+                <section class="part">
+                    <h2 class="part-title">Part 1.1: Convolutions from Scratch!</h2>
+                    <p>
+                        I first started by implementing a convolution function (first using four for loops, then two). When comparing with the built-in function scipy.signal.convolve2d, my implementation runs slower (takes about a second).
+                    </p>
+                    <p>
+                        I then tested my convolution functions on an image of myself with a box filter (blurring filter).
+                    </p>
+                    <div class="figure-grid cols-4">
+                        <figure>
+                            <img src="images/tanmayi.png" width="724" height="723">
+                            <figcaption>original</figcaption>
+                        </figure>
+                        <figure>
+                            <img src="images/tanmayi_4loops.png" width="724" height="723">
+                            <figcaption>4 loops</figcaption>
+                        </figure>
+                        <figure>
+                            <img src="images/tanmayi_2loops.png" width="724" height="723">
+                            <figcaption>2 loops</figcaption>
+                        </figure>
+                        <figure class="filter">
+<pre><code>(1/81) *
+[1 1 1 1 1 1 1 1 1]
+[1 1 1 1 1 1 1 1 1]
+[1 1 1 1 1 1 1 1 1]
+[1 1 1 1 1 1 1 1 1]
+[1 1 1 1 1 1 1 1 1]
+[1 1 1 1 1 1 1 1 1]
+[1 1 1 1 1 1 1 1 1]
+[1 1 1 1 1 1 1 1 1]
+[1 1 1 1 1 1 1 1 1]</code></pre>
+                            <figcaption>9x9 box filter</figcaption>
+                        </figure>
+                    </div>
+                    <p>
+                        I also tested with the d_x and d_y filters.
+                    </p>
+                    <div class="figure-grid cols-3">
+                        <figure>
+                            <img src="images/tanmayi_d_x.png" width="724" height="723">
+                            <figcaption>d_x (vertical edges)</figcaption>
+                        </figure>
+                        <figure>
+                            <img src="images/tanmayi_d_y.png" width="724" height="723">
+                            <figcaption>d_y (horizontal edges)</figcaption>
+                        </figure>
+                        <figure class="filter">
+<pre><code>D_x = [ 1  0 -1 ]
+
+D_y = [  1 ]
+      [  0 ]
+      [ -1 ]</code></pre>
+                            <figcaption>finite difference filters</figcaption>
+                        </figure>
+                    </div>
+                    <p>
+                        Below are both implementations.
+                    </p>
+                    <div class="figure-grid cols-2">
+                        <figure class="code">
+<pre><code>def conv2d_4loops(image, kernel, padding = "same"):
+    h, w = image.shape
+    k_h, k_w = kernel.shape
+
+    # flip kernel for convolution
+    kernel = np.flip(kernel)
+
+    if padding == "full": 
+        pad_h = k_h - 1
+        pad_w = k_w - 1
+    elif padding == "same": 
+        pad_h = k_h // 2
+        pad_w = k_w // 2
+    else:
+        pad_h = pad_w = 0
+
+    # pad with zeros
+    padded = np.pad(
+        image,
+        ((pad_h, pad_h), (pad_w, pad_w)),
+        constant_values=0
+    )
+
+    if padding == "same":
+        out_h, out_w = h, w
+    else:
+        out_h = h + k_h - 1
+        out_w = w + k_w - 1
+
+    output = np.zeros((out_h, out_w))
+
+    # four loops:
+    # two over output pixels, two over kernel pixels
+    for i in range(out_h):
+        for j in range(out_w):
+            for m in range(k_h):
+                for n in range(k_w):
+                    output[i, j] += (
+                        padded[i + m, j + n] * kernel[m, n]
+                    )
+
+    return output</code></pre>
+                            <figcaption>four loops</figcaption>
+                        </figure>
+                        <figure class="code">
+<pre><code>def conv2d_2loops(image, kernel, padding="same"):
+    h, w = image.shape
+    k_h, k_w = kernel.shape
+
+    # flip kernel for convolution
+    kernel = np.flip(kernel)
+
+    if padding == "same":
+        pad_h = k_h // 2
+        pad_w = k_w // 2
+    elif padding == "full":
+        pad_h = k_h - 1
+        pad_w = k_w - 1
+    else:
+        pad_h = pad_w = 0
+
+    # pad with zeros
+    padded = np.pad(
+        image,
+        ((pad_h, pad_h), (pad_w, pad_w)),
+        constant_values=0
+    )
+
+    if padding == "full":
+        out_h = h + k_h - 1
+        out_w = w + k_w - 1
+    elif padding == "same":
+        out_h = h
+        out_w = w
+    else:
+        out_h = h - k_h + 1
+        out_w = w - k_w + 1
+
+    output = np.zeros((out_h, out_w))
+
+    for i in range(out_h):
+        for j in range(out_w):
+            output[i, j] = np.sum(
+                padded[i:i + k_h, j:j + k_w] * kernel #element-wise multiplication
+            )
+
+    return output</code></pre>
+                            <figcaption>two loops</figcaption>
+                        </figure>
+                    </div>
+                    <p>
+                        In the following parts, I use the two looped implementation for all my convolutions.
+                    </p>
+                </section>
+
+                <section class="part">
+                    <h2 class="part-title">Part 1.2: Finite Difference Operator</h2>
+                    <p>
+                        I then derived the partial derivative in x and y of the cameraman image by convolving the given image with the d_x and d_y filters. You can see that this brings out the vertical and horizontal edges in the photo respectively. I had to threshold the images experimentally to create a binary image.
+                    </p>
+                    <div class="figure-grid cols-5">
+                        <figure>
+                            <img src="images/cameraman.png" width="540" height="542">
+                            <figcaption>original</figcaption>
+                        </figure>
+                        <figure>
+                            <img src="images/cameraman_d_x.png" width="540" height="542">
+                            <figcaption>d_x</figcaption>
+                        </figure>
+                        <figure>
+                            <img src="images/cameraman_d_x_binary.png" width="540" height="542">
+                            <figcaption>d_x, thresholded</figcaption>
+                        </figure>
+                        <figure>
+                            <img src="images/cameraman_d_y.png" width="540" height="542">
+                            <figcaption>d_y</figcaption>
+                        </figure>
+                        <figure>
+                            <img src="images/cameraman_d_y_binary.png" width="540" height="542">
+                            <figcaption>d_y, thresholded</figcaption>
+                        </figure>
+                    </div>
+                    <p>
+                        The gradient magnitude image is the magnitude between the two previous edge images, resulting in the following image. I similarly thresholded this image as well.
+                    </p>
+                    <div class="figure-grid cols-3">
+                        <figure>
+                            <img src="images/cameraman.png" width="540" height="542">
+                            <figcaption>original</figcaption>
+                        </figure>
+                        <figure>
+                            <img src="images/cameraman_gradient_combined.png" width="540" height="542">
+                            <figcaption>gradient magnitude</figcaption>
+                        </figure>
+                        <figure>
+                            <img src="images/cameraman_gradient_combined_binary.png" width="540" height="542">
+                            <figcaption>gradient magnitude, thresholded</figcaption>
+                        </figure>
+                    </div>
+                </section>
+
+                <section class="part">
+                    <h2 class="part-title">Part 1.3: Derivative of Gaussian (DoG) Filter</h2>
+                    <p>
+                        Because the results on the cameraman image from the last part were slightly noisy, what if we first blurred the image and then found the edges? We can do this by applying the filters sequentially, or by combining the two filters themselves. This combined filter is called DoG (derivative of gaussian). Using either method will result in the same cleaned output, as shown below. In comparison to using the finite difference operator alone, the edges are much smoother.
+                    </p>
+                    <div class="figure-grid cols-3">
+                        <figure>
+                            <img src="images/cameraman_blurred_d_x_binary.png" width="540" height="542">
+                            <figcaption>sequential d_x</figcaption>
+                        </figure>
+                        <figure>
+                            <img src="images/cameraman_blurred_d_y_binary.png" width="540" height="542">
+                            <figcaption>sequential d_y</figcaption>
+                        </figure>
+                        <figure>
+                            <img src="images/cameraman_blurred_gradient_sequential_combined_binary.png" width="540" height="542">
+                            <figcaption>sequential magnitude</figcaption>
+                        </figure>
+                        <figure>
+                            <img src="images/cameraman_combined_d_x_binary.png" width="540" height="542">
+                            <figcaption>DoG d_x</figcaption>
+                        </figure>
+                        <figure>
+                            <img src="images/cameraman_combined_d_y_binary.png" width="540" height="542">
+                            <figcaption>DoG d_y</figcaption>
+                        </figure>
+                        <figure>
+                            <img src="images/cameraman_gradient_dog_combined_binary.png" width="540" height="542">
+                            <figcaption>DoG magnitude</figcaption>
+                        </figure>
+                    </div>
+                </section>
+
+                <section class="part">
+                    <h2 class="part-title">Part 2.1: Image "Sharpening"</h2>
+                    <p>
+                        Now let's "sharpen" an image! To do so, we will simply add some of the higher frequencies in an image (the taj mahal) to itself. How do we get the high frequencies? By simply subtracting the low frequencies (the result of the 2d gaussian blur filter). Some hyperparameters to play with here are how much gaussian blur to use (in terms of kernel size and standard deviation), as well as how much high frequency to add back in. Below is a sharpened taj mahal in grayscale with a lot of high frequency added.
+                    </p>
+                    <div class="figure-grid cols-2">
+                        <figure>
+                            <img src="images/taj.png" width="300" height="300">
+                            <figcaption>original</figcaption>
+                        </figure>
+                        <figure>
+                            <img src="images/taj_unsharp.png" width="300" height="300">
+                            <figcaption>sharpened</figcaption>
+                        </figure>
+                    </div>
+                    <p>
+                        Applying this technique to other images works as well! For example, here is the effect on an image of a rose. I first blurred it, then resharpened it to see if I could reconstruct the original image.
+                    </p>
+                    <div class="figure-grid cols-3">
+                        <figure>
+                            <img src="images/rose.png" width="1356" height="2048">
+                            <figcaption>original</figcaption>
+                        </figure>
+                        <figure>
+                            <img src="images/rose_blurred.png" width="1356" height="2048">
+                            <figcaption>blurred</figcaption>
+                        </figure>
+                        <figure>
+                            <img src="images/rose_blurred_unsharp.png" width="1356" height="2048">
+                            <figcaption>blurred, then sharpened</figcaption>
+                        </figure>
+                    </div>
+                </section>
+
+                <section class="part">
+                    <h2 class="part-title">Part 2.2: Hybrid Images</h2>
+                    <p>
+                        What else can we do when we separate frequencies? The SIGGRAPH 2006 paper by Oliva, Torralba, and Schyns, <a href="http://olivalab.mit.edu/hybridimage.htm">Hybrid Images</a>, introduced a fun effect you can create that takes advantage of the human eye. Essentially you take the high frequencies from one image and superimpose them onto the low frequencies of another. When looking at it from far away, the low frequency image appears, and when looking at it from close up, the high frequency image does instead.
+                    </p>
+                    <p>
+                        One of my images is a blooming peony across time where we have a half-opened peony as the low frequency image and a fully opened peony as the high frequency image. I had to play around with the hyperparameters which respectively control the gaussian kernel size (I chose 17) and the interpolation between both images to get it to look its best.
+                    </p>
+                    <div class="figure-grid cols-3">
+                        <figure>
+                            <img src="images/peony_medium.png" width="600" height="601">
+                            <figcaption>half-opened peony (low frequency)</figcaption>
+                        </figure>
+                        <figure>
+                            <img src="images/peony_open.png" width="600" height="601">
+                            <figcaption>open peony (high frequency)</figcaption>
+                        </figure>
+                        <figure class="zoom">
+                            <div class="zoom-stage">
+                                <img src="images/hybrid_peony_open_medium.png" width="600" height="601">
+                            </div>
+                            <label class="zoom-control">
+                                <span>zoom</span>
+                                <input type="range" min="0.2" max="3" step="0.05" value="1" aria-label="zoom the hybrid image">
+                            </label>
+                            <figcaption>hybrid (drag to zoom)</figcaption>
+                        </figure>
+                    </div>
+                    <p>
+                        The intermediate filtered images look like so:
+                    </p>
+                    <div class="figure-grid cols-2">
+                        <figure>
+                            <img src="images/peony_medium_blurred.png" width="600" height="601">
+                            <figcaption>low-pass (blurred)</figcaption>
+                        </figure>
+                        <figure>
+                            <img src="images/peony_open_sharpened_normalized.png" width="600" height="601">
+                            <figcaption>high-pass (sharpened)</figcaption>
+                        </figure>
+                    </div>
+                    <p>
+                        The 2d fourier frequency magnitude plots for this example are below:
+                    </p>
+                    <div class="figure-grid">
+                        <figure>
+                            <img src="images/hybrid_peony_open_medium_freq_analysis.png" width="4148" height="1470">
+                            <figcaption>log magnitude of the 2d fourier transforms: inputs, filtered inputs, and hybrid</figcaption>
+                        </figure>
+                    </div>
+                    <p>
+                        Additionally, I tried my implementation on a pineapple and pinecone and on derek and nutmeg, seen below:
+                    </p>
+                    <div class="figure-grid cols-3">
+                        <figure>
+                            <img src="images/pineapple_aligned.png" width="621" height="878">
+                            <figcaption>pineapple (low frequency)</figcaption>
+                        </figure>
+                        <figure>
+                            <img src="images/pinecone_aligned.png" width="621" height="878">
+                            <figcaption>pinecone (high frequency)</figcaption>
+                        </figure>
+                        <figure class="zoom">
+                            <div class="zoom-stage">
+                                <img src="images/hybrid_pinecone_pineapple.png" width="621" height="878">
+                            </div>
+                            <label class="zoom-control">
+                                <span>zoom</span>
+                                <input type="range" min="0.2" max="3" step="0.05" value="1" aria-label="zoom the hybrid image">
+                            </label>
+                            <figcaption>hybrid (drag to zoom)</figcaption>
+                        </figure>
+                    </div>
+                    <div class="figure-grid cols-3">
+                        <figure>
+                            <img src="images/nutmeg_aligned.png" width="739" height="1266">
+                            <figcaption>nutmeg (high frequency)</figcaption>
+                        </figure>
+                        <figure>
+                            <img src="images/derek_aligned.png" width="739" height="1266">
+                            <figcaption>derek (low frequency)</figcaption>
+                        </figure>
+                        <figure class="zoom">
+                            <div class="zoom-stage">
+                                <img src="images/hybrid_nutmeg_derek.png" width="739" height="1266">
+                            </div>
+                            <label class="zoom-control">
+                                <span>zoom</span>
+                                <input type="range" min="0.2" max="3" step="0.05" value="1" aria-label="zoom the hybrid image">
+                            </label>
+                            <figcaption>hybrid (drag to zoom)</figcaption>
+                        </figure>
+                    </div>
+                </section>
+
+                <section class="part">
+                    <h2 class="part-title">Part 2.3 and 2.4: Gaussian and Laplacian Stacks and Multiresolution Blending</h2>
+                    <p>
+                        What if we could blend images together in a (semi)-natural manner? To make the oraple (blended orange and apple) come alive, I implemented the following gaussian and laplacian stacks.
+                    </p>
+                    <div class="figure-grid half">
+                        <figure>
+                            <img src="images/oraple_stacks.png" width="2600" height="4470">
+                            <figcaption>gaussian and laplacian stacks of the apple, orange, and mask</figcaption>
+                        </figure>
+                    </div>
+                    <p>
+                        Together, they create the oraple!
+                    </p>
+                    <div class="figure-grid half">
+                        <figure>
+                            <img src="images/oraple.png" width="300" height="300">
+                            <figcaption>the oraple</figcaption>
+                        </figure>
+                    </div>
+                    <p>
+                        I also recreated the figure from the paper demonstrating the laplacian stack.
+                    </p>
+                    <div class="figure-grid half">
+                        <figure>
+                            <img src="images/oraple_fig.png" width="2626" height="3570">
+                            <figcaption>laplacian stack blending, after figure 3.42 of the paper</figcaption>
+                        </figure>
+                    </div>
+                    <p>
+                        What makes this work is that each frequency band gets a transition matched to its level of detail. Fine detail is blended across a narrow seam and coarse features are blended across a wide seam, so the jump from the darker apple to the lighter orange becomes a gradual gradient rather than a visible line. If you used a single mask for everything, you'd have to compromise: a sharp mask leaves an obvious seam, and a blurry mask makes the fine textures overlap.
+                    </p>
+                    <p>
+                        I further tried the vertical seam trick on a day to night NYC image, where the left side of the image is daytime and the right side of the image is nighttime.
+                    </p>
+                    <div class="figure-grid cols-3">
+                        <figure>
+                            <img src="images/day.png" width="1006" height="1396">
+                            <figcaption>day</figcaption>
+                        </figure>
+                        <figure>
+                            <img src="images/night.png" width="366" height="508">
+                            <figcaption>night</figcaption>
+                        </figure>
+                        <figure>
+                            <img src="images/day_night.png" width="366" height="508">
+                            <figcaption>blended, vertical seam</figcaption>
+                        </figure>
+                    </div>
+                    <p>
+                        Lastly, I tried blending an orange slice into a bicycle wheel. This required the use of a circular mask.
+                    </p>
+                    <div class="figure-grid half">
+                        <figure>
+                            <img src="images/bike_orange.png" width="600" height="600">
+                            <figcaption>orange slice blended into a bicycle wheel</figcaption>
+                        </figure>
+                    </div>
+                </section>
+            </div>
+        </section>
+    </main>
+
+</body>
+</html>
