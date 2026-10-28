@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>project 4 — cs 180</title>
+    <link rel="stylesheet" href="../../styles.css">
+    <link rel="stylesheet" href="../cs180.css">
+    <style>
+        /* Warped images have meaningful corners, so keep them square on this page. */
+        .figure-grid img {
+            border-radius: 0;
+        }
+
+        /* The photos are tall, so show pairs at about a third of the column each, centered. */
+        .figure-grid.compact {
+            justify-content: center;
+        }
+
+        .figure-grid.compact figure {
+            flex: 0 1 36%;
+            max-width: 36%;
+        }
+
+        @media (max-width: 600px) {
+            .figure-grid.compact figure {
+                flex-basis: 100%;
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+    </header>
+
+    <main>
+        <section class="section">
+            <div class="section-content">
+                <a class="back-link" href="../index.html">← cs 180</a>
+
+                <h1 class="course-title">project 4</h1>
+                <p class="course-subtitle">
+                    stitching photo mosaics
+                </p>
+
+                <p>
+                    Project 4 is about stitching photos into mosaics. In Part A, I pick correspondences between photos taken from one center of projection by hand and recover the homography with least squares. This homography allows us to inverse-warp one image into the other's plane, and blend the two together to create a panarama effect.
+                </p>
+
+                <!-- ================================================================ -->
+                <h2 class="group-title">Part A: Image Warping and Mosaicing</h2>
+
+                <section class="part">
+                    <h2 class="part-title">A.1: Shoot the Pictures</h2>
+                    <p>
+                        All photos were taken on my phone, two sets from a rooftop and one from the sidewalk. I kept the phone in one spot and rotated it between shots so that each pair is related by a homography, with roughly half of the frame overlapping.
+                    </p>
+                    <div class="figure-grid compact">
+                        <figure>
+                            <img src="images/set1_img1.jpg" width="1200" height="1600">
+                            <figcaption>set 1, image 1</figcaption>
+                        </figure>
+                        <figure>
+                            <img src="images/set1_img2.jpg" width="1200" height="1600">
+                            <figcaption>set 1, image 2 (camera rotated right)</figcaption>
+                        </figure>
+                    </div>
+                    <div class="figure-grid compact">
+                        <figure>
+                            <img src="images/set5_img1.jpg" width="1200" height="1600">
+                            <figcaption>set 2, image 1</figcaption>
+                        </figure>
+                        <figure>
+                            <img src="images/set5_img2.jpg" width="1200" height="1600">
+                            <figcaption>set 2, image 2 (camera rotated right)</figcaption>
+                        </figure>
+                    </div>
+                    <div class="figure-grid compact">
+                        <figure>
+                            <img src="images/set4_img1.jpg" width="1200" height="1600">
+                            <figcaption>set 3, image 1</figcaption>
+                        </figure>
+                        <figure>
+                            <img src="images/set4_img2.jpg" width="1200" height="1600">
+                            <figcaption>set 3, image 2 (camera rotated right)</figcaption>
+                        </figure>
+                    </div>
+                </section>
+
+                <section class="part">
+                    <h2 class="part-title">A.2: Recover Homographies</h2>
+                    <p>
+                        I labeled 8 correspondences per pair by hand with the course correspondence tool and saved them as JSON. Window corners and the corners of the rooftop shed gave the most reliable points.
+                    </p>
+                    <div class="figure-grid cols-1">
+                        <figure>
+                            <img src="images/set1_correspondences.png" width="1600" height="800">
+                            <figcaption>the 8 correspondences for set 1, matched by color and index</figcaption>
+                        </figure>
+                    </div>
+                    <p>
+                        <code>computeH</code> takes <code>im1_pts</code> and <code>im2_pts</code>, two n×2 matrices holding the clicked points (x<sub>i</sub>, y<sub>i</sub>) in image 1 and (u<sub>i</sub>, v<sub>i</sub>) in image 2. H maps (x, y) → (u, v) through homogeneous coordinates: multiplying [x, y, 1] by H gives [u′, v′, w′], and dividing by w′ gives u = u′/w′ and v = v′/w′. Fixing the bottom-right entry of H to 1 leaves 8 unknowns h<sub>1</sub> … h<sub>8</sub>.
+                    </p>
+                    <div class="figure-grid cols-1">
+                        <figure class="filter">
+<pre><code>given   im1_pts = [ x1  y1 ]      im2_pts = [ u1  v1 ]
+                  [ x2  y2 ]                [ u2  v2 ]
+                  [  :   : ]                [  :   : ]
+                  [ xn  yn ]                [ un  vn ]
+
+[ u' ]       [ x ]             [ h1  h2  h3 ]
+[ v' ]  =  H [ y ]      H  =   [ h4  h5  h6 ]
+[ w' ]       [ 1 ]             [ h7  h8   1 ]
+
+u' = h1·x + h2·y + h3          u = u' / w'
+v' = h4·x + h5·y + h6          v = v' / w'
+w' = h7·x + h8·y + 1</code></pre>
+                            <figcaption>H maps (x, y) in image 1 to (u, v) in image 2</figcaption>
+                        </figure>
+                    </div>
+                    <p>
+                        Multiplying u = u′/w′ and v = v′/w′ through by w′ and moving everything that depends on h to the left gives h<sub>1</sub>x + h<sub>2</sub>y + h<sub>3</sub> − u·h<sub>7</sub>x − u·h<sub>8</sub>y = u and h<sub>4</sub>x + h<sub>5</sub>y + h<sub>6</sub> − v·h<sub>7</sub>x − v·h<sub>8</sub>y = v. Both are linear in the unknowns, so each correspondence i contributes a 2×8 block A<sub>i</sub> and a 2×1 block b<sub>i</sub>. Stacking all n of them gives the system Ah = b.
+                    </p>
+                    <div class="figure-grid cols-1">
+                        <figure class="filter">
+<pre><code>A_i = [ x  y  1  0  0  0  -u·x  -u·y ]        b_i = [ u ]
+      [ 0  0  0  x  y  1  -v·x  -v·y ]              [ v ]
+
+[ x1  y1  1   0   0   0  -u1·x1  -u1·y1 ]       [ h1 ]       [ u1 ]
+[  0   0  0  x1  y1   1  -v1·x1  -v1·y1 ]       [ h2 ]       [ v1 ]
+[ x2  y2  1   0   0   0  -u2·x2  -u2·y2 ]       [ h3 ]       [ u2 ]
+[  0   0  0  x2  y2   1  -v2·x2  -v2·y2 ]   ·   [ h4 ]   =   [ v2 ]
+[                 ...                   ]       [ h5 ]       [ .. ]
+[ xn  yn  1   0   0   0  -un·xn  -un·yn ]       [ h6 ]       [ un ]
+[  0   0  0  xn  yn   1  -vn·xn  -vn·yn ]       [ h7 ]       [ vn ]
+                                                [ h8 ]
+             A : 2n × 8                        h : 8 × 1    b : 2n × 1</code></pre>
+                            <figcaption>the system solved in computeH</figcaption>
+                        </figure>
+                    </div>
+                    <p>
+                        With 4 points A is square and the system solves exactly; with more it is overdetermined, so <code>computeH</code> solves it in the least-squares sense and reshapes [h<sub>1</sub> … h<sub>8</sub>, 1] into the 3×3 matrix H. Reprojecting the 8 clicked points of set 1 through the recovered H gives a mean error of 2.6 px and a max of 4.7 px on a 4284×5712 image, about the precision of my clicks.
+                    </p>
+                    <p>
+                        The main thing I took away from this part was how much simpler and faster it is to project many points at once, stacking them into a matrix and multiplying by H in one shot instead of looping, which I leaned on heavily for the warps below.
+                    </p>
+                    <div class="figure-grid cols-1">
+                        <figure class="filter">
+<pre><code>H = [  1.1724   -0.0138   -1018.61 ]
+    [  0.1187    1.1271    -343.64 ]
+    [  3.6e-05   5.0e-06      1.00 ]</code></pre>
+                            <figcaption>recovered homography for set 1 (image 1 → image 2)</figcaption>
+                        </figure>
+                    </div>
+                </section>
+
+                <section class="part">
+                    <h2 class="part-title">A.3: Warp the Images</h2>
+                    <p>
+                        I implemented two different warps, <code>warpImageNearestNeighbor</code> and <code>warpImageBilinear</code>. Both warps use inverse mapping so the output has no holes. I push the four corners of the input through H to get the output bounding box, build a grid of every output pixel (u, v, 1), multiply by H<sup>−1</sup>, and divide by the third coordinate to get source coordinates (x, y). Only pixels whose (x, y) lands inside the input image are filled so that everything else stays black.
+                    </p>
+                    <p>
+                        Nearest neighbor (<code>warpImageNearestNeighbor</code>) rounds (x, y) to the closest pixel and copies it. Bilinear (<code>warpImageBilinear</code>) takes the 2×2 neighborhood at x, y and averages the four pixels.
+                    </p>
+                    <p>
+                        <strong>Rectification.</strong> To test the warp on a single image, I clicked the four corners of a rectangular object and mapped them to a hand-chosen rectangle. The output canvas is the bounding box of the whole warped photo, so the wall around the target gets warped along with it. The order of the target corners matters: pairing the clicked corners with the square in a different order flips or rotates the rectified result, so the same code can flip an image just by reordering four coordinates.
+                    </p>
+                    <div class="figure-grid cols-1">
+                        <figure class="filter">
+<pre><code>H = [  0.4279    0.0684   -463.14 ]
+    [ -0.0083    0.4947   -720.58 ]
+    [ -1.0e-06   1.3e-04     1.00 ]</code></pre>
+                            <figcaption>poster, four corners mapped to a 1000×1000 square</figcaption>
+                        </figure>
+                    </div>
+                    <div class="figure-grid cols-3">
+                        <figure>
+                            <img src="images/set2_img1.jpg" width="1200" height="1600">
+                            <figcaption>original</figcaption>
+                        </figure>
+                        <figure>
+                            <img src="images/set2_rectified_nearest.jpg" width="1496" height="1600">
+                            <figcaption>nearest neighbor</figcaption>
+                        </figure>
+                        <figure>
+                            <img src="images/set2_rectified_bilinear.jpg" width="1496" height="1600">
+                            <figcaption>bilinear</figcaption>
+                        </figure>
+                    </div>
+                    <div class="figure-grid cols-1">
+                        <figure class="filter">
+<pre><code>H = [  0.2003    0.0007   -177.40 ]
+    [ -0.0490    0.2070   -186.55 ]
+    [ -1.1e-04   1.4e-05     1.00 ]</code></pre>
+                            <figcaption>painting, four corners mapped to a 1000×800 rectangle</figcaption>
+                        </figure>
+                    </div>
+                    <div class="figure-grid cols-3">
+                        <figure>
+                            <img src="images/set3_img1.jpg" width="1200" height="1600">
+                            <figcaption>original</figcaption>
+                        </figure>
+                        <figure>
+                            <img src="images/set3_rectified_nearest.jpg" width="1144" height="1600">
+                            <figcaption>nearest neighbor</figcaption>
+                        </figure>
+                        <figure>
+                            <img src="images/set3_rectified_bilinear.jpg" width="1144" height="1600">
+                            <figcaption>bilinear</figcaption>
+                        </figure>
+                    </div>
+                    <p>
+                        <strong>Nearest neighbor vs. bilinear.</strong> At full size the two look the same. But when you zoom in, you can tell the difference near the edges. Nearest neighbor keeps hard pixel edges along the poster corner and the painting's border, while bilinear smooths them out a bit more.
+                    </p>
+                    <div class="figure-grid cols-1">
+                        <figure>
+                            <img src="images/set2_zoom_pair.png" width="1784" height="880">
+                            <figcaption>poster corner: nearest neighbor (left) vs. bilinear (right)</figcaption>
+                        </figure>
+                    </div>
+                    <div class="figure-grid cols-1">
+                        <figure>
+                            <img src="images/set3_zoom_pair.png" width="1784" height="880">
+                            <figcaption>painting border: nearest neighbor (left) vs. bilinear (right)</figcaption>
+                        </figure>
+                    </div>
+                </section>
+
+                <section class="part">
+                    <h2 class="part-title">A.4: Blend the Images into a Mosaic</h2>
+                    <p>
+                        I keep image 2 fixed and warp image 1 into its plane.  Image 1 is warped with both the homography matrix H and a translation T and image 2 is pasted at an offset.
+                    </p>
+                    <div class="figure-grid compact">
+                        <figure>
+                            <img src="images/set1_img1.jpg" width="1200" height="1600">
+                            <figcaption>mosaic 1: image 1</figcaption>
+                        </figure>
+                        <figure>
+                            <img src="images/set1_img2.jpg" width="1200" height="1600">
+                            <figcaption>mosaic 1: image 2</figcaption>
+                        </figure>
+                    </div>
+                    <p>
+                        Getting the overlap took many tries. My first version simply placed the warped image 1 on top of image 2, which leaves a strong edge wherever the two images disagree. The second averaged the overlapping pixels equally: both images are now visible in the overlap, but the boundary is still a hard line and any misaligned detail shows up twice. What finally worked was radial weighting. Each image gets a weight that is 1 at its center and falls off linearly to 0 at its edges; for image 1 the weight is evaluated in its original coordinates by reusing the inverse-mapped (x, y) grid. The mosaic is the weighted average (w<sub>1</sub>I<sub>1</sub> + w<sub>2</sub>I<sub>2</sub>) / (w<sub>1</sub> + w<sub>2</sub>) over the whole canvas, which reduces to a plain copy wherever only one image has weight. I believe an edge-based scheme, weighting by the distance to the nearest image edge instead of the distance from the center, should work as well.
+                    </p>
+                    <div class="figure-grid compact">
+                        <figure>
+                            <img src="images/set1_stitched_v0.jpg" width="1363" height="1600">
+                            <figcaption>v0: image 1 placed on top of image 2</figcaption>
+                        </figure>
+                        <figure>
+                            <img src="images/set1_stitched_v1.jpg" width="1363" height="1600">
+                            <figcaption>v1: overlapping pixels averaged equally</figcaption>
+                        </figure>
+                    </div>
+                    <div class="figure-grid cols-3">
+                        <figure>
+                            <img src="images/set1_seam_v0.jpg" width="500" height="500">
+                            <figcaption>v0: hard edge at the boundary</figcaption>
+                        </figure>
+                        <figure>
+                            <img src="images/set1_seam_v1.jpg" width="500" height="500">
+                            <figcaption>v1: both images visible, edge remains</figcaption>
+                        </figure>
+                        <figure>
+                            <img src="images/set1_seam_v2.jpg" width="500" height="500">
+                            <figcaption>v2: radial weighting</figcaption>
+                        </figure>
+                    </div>
+                    <div class="figure-grid half">
+                        <figure>
+                            <img src="images/set1_stitched_v2.jpg" width="1363" height="1600">
+                            <figcaption>mosaic 1 (v2): image 1 warped into image 2's plane with radial weighting</figcaption>
+                        </figure>
+                    </div>
+                    <p>
+                        Where the correspondences are placed decides where the two images line up. For mosaic 2 I picked 20 points and deliberately put almost all of them on and around the large tree, the focal point of the scene, so that it would align as well as possible. It does: the tree and the roofline behind it are sharp. The cost is that fine detail with no correspondences nearby, like the bushes and grass near the bottom of the frame, is only aligned as well as the homography extrapolates there, and it shows up doubled.
+                    </p>
+                    <div class="figure-grid compact">
+                        <figure>
+                            <img src="images/set5_img1.jpg" width="1200" height="1600">
+                            <figcaption>mosaic 2: image 1</figcaption>
+                        </figure>
+                        <figure>
+                            <img src="images/set5_img2.jpg" width="1200" height="1600">
+                            <figcaption>mosaic 2: image 2</figcaption>
+                        </figure>
+                    </div>
+                    <div class="figure-grid cols-1">
+                        <figure>
+                            <img src="images/set5_correspondences.png" width="1600" height="800">
+                            <figcaption>mosaic 2: the 20 correspondences, clustered around the tree</figcaption>
+                        </figure>
+                    </div>
+                    <div class="figure-grid half">
+                        <figure>
+                            <img src="images/set5_stitched.jpg" width="1439" height="1600">
+                            <figcaption>mosaic 2: image 1 warped into image 2's plane with radial weighting</figcaption>
+                        </figure>
+                    </div>
+                    <div class="figure-grid compact">
+                        <figure>
+                            <img src="images/set5_crop_tree.jpg" width="500" height="500">
+                            <figcaption>the tree, surrounded by correspondences, lines up</figcaption>
+                        </figure>
+                        <figure>
+                            <img src="images/set5_crop_grass.jpg" width="500" height="500">
+                            <figcaption>the grass and branches near the bottom, with none nearby, ghost</figcaption>
+                        </figure>
+                    </div>
+                    <p>
+                        Mosaic 3 was the hardest to blend, and I think the photos are to blame: I most likely shifted the center of projection slightly between the two shots, so no single homography fits both. This shows up in the fit itself. The largest residual of the least-squares system, max |Ah − b|, is about 60 px for this set, compared with 8 px for mosaic 2 and 4 px for mosaic 1, even with 24 correspondences. This resulted in ghosting on the trees and the light pole in the overlap.
+                    </p>
+                    <div class="figure-grid compact">
+                        <figure>
+                            <img src="images/set4_img1.jpg" width="1200" height="1600">
+                            <figcaption>mosaic 3: image 1</figcaption>
+                        </figure>
+                        <figure>
+                            <img src="images/set4_img2.jpg" width="1200" height="1600">
+                            <figcaption>mosaic 3: image 2</figcaption>
+                        </figure>
+                    </div>
+                    <div class="figure-grid cols-1">
+                        <figure>
+                            <img src="images/set4_correspondences.png" width="1600" height="800">
+                            <figcaption>mosaic 3: the 24 correspondences</figcaption>
+                        </figure>
+                    </div>
+                    <div class="figure-grid half">
+                        <figure>
+                            <img src="images/set4_stitched.jpg" width="1373" height="1600">
+                            <figcaption>mosaic 3: image 1 warped into image 2's plane with radial weighting</figcaption>
+                        </figure>
+                    </div>
+                    <div class="figure-grid compact">
+                        <figure>
+                            <img src="images/set4_crop_pole.jpg" width="500" height="500">
+                            <figcaption>the light pole and leaves show up twice</figcaption>
+                        </figure>
+                        <figure>
+                            <img src="images/set4_crop_trees.jpg" width="500" height="500">
+                            <figcaption>the trees in front of the house are doubled as well</figcaption>
+                        </figure>
+                    </div>
+                </section>
+            </div>
+        </section>
+    </main>
+
+</body>
+</html>
