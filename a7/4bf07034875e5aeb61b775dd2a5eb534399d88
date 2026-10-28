@@ -1,0 +1,19 @@
+cs180/index.html
+  s_8358e2ff080eba::t_2eec4adfb924e7 52,54-56
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a74bf07034875e5aeb61b775dd2a5eb534399d88",
+  "prompts": {},
+  "sessions": {
+    "s_8358e2ff080eba": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "8df6fffa-12d4-4997-85ea-2ea571424354",
+        "model": "claude-fable-5-1"
+      },
+      "human_author": "tanmayi <tanmayi.dasari@gmail.com>"
+    }
+  }
+}
