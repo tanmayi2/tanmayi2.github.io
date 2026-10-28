@@ -141,7 +141,7 @@ w' = h7·x + h8·y + 1</code></pre>
                         </figure>
                     </div>
                     <p>
-                        With 4 points A is square and the system solves exactly; with more it is overdetermined, so <code>computeH</code> solves it in the least-squares sense and reshapes [h<sub>1</sub> … h<sub>8</sub>, 1] into the 3×3 matrix H. Reprojecting the 8 clicked points of set 1 through the recovered H gives a mean error of 2.6 px and a max of 4.7 px on a 4284×5712 image, about the precision of my clicks.
+                        With 4 points A is square and the system solves exactly; with more it is overdetermined, so <code>computeH</code> solves it in the least-squares sense and reshapes [h<sub>1</sub> … h<sub>8</sub>, 1] into the 3×3 matrix H. 
                     </p>
                     <p>
                         The main thing I took away from this part was how much simpler and faster it is to project many points at once, stacking them into a matrix and multiplying by H in one shot instead of looping, which I leaned on heavily for the warps below.
