@@ -46,7 +46,7 @@
                 </p>
 
                 <p>
-                    Project 4 is about stitching photos into mosaics. In Part A, I pick correspondences between photos taken from one center of projection by hand and recover the homography with least squares. This homography allows us to inverse-warp one image into the other's plane, and blend the two together to create a panarama effect.
+                    Project 4 is about stitching photos into mosaics. In Part A, I pick correspondences between photos taken from one center of projection by hand and recover the homography with least squares. This homography allows us to inverse-warp one image into the other's plane, and blend the two together to create a panorama effect. In Part B, I replace the hand-clicked correspondences with features that are detected, described, and matched automatically.
                 </p>
 
                 <!-- ================================================================ -->
@@ -101,7 +101,7 @@
                         </figure>
                     </div>
                     <p>
-                        <code>computeH</code> takes <code>im1_pts</code> and <code>im2_pts</code>, two n×2 matrices holding the clicked points (x<sub>i</sub>, y<sub>i</sub>) in image 1 and (u<sub>i</sub>, v<sub>i</sub>) in image 2. H maps (x, y) → (u, v) through homogeneous coordinates: multiplying [x, y, 1] by H gives [u′, v′, w′], and dividing by w′ gives u = u′/w′ and v = v′/w′. Fixing the bottom-right entry of H to 1 leaves 8 unknowns h<sub>1</sub> … h<sub>8</sub>.
+                        <code>computeH</code> takes <code>im1_pts</code> and <code>im2_pts</code>, two nx2 matrices holding the clicked points (x<sub>i</sub>, y<sub>i</sub>) in image 1 and (u<sub>i</sub>, v<sub>i</sub>) in image 2. H maps (x, y) → (u, v) through homogeneous coordinates: multiplying [x, y, 1] by H gives [u′, v′, w′], and dividing by w′ gives u = u′/w′ and v = v′/w′. Fixing the bottom-right entry of H to 1 leaves 8 unknowns h<sub>1</sub> … h<sub>8</sub>.
                     </p>
                     <div class="figure-grid cols-1">
                         <figure class="filter">
@@ -121,7 +121,7 @@ w' = h7·x + h8·y + 1</code></pre>
                         </figure>
                     </div>
                     <p>
-                        Multiplying u = u′/w′ and v = v′/w′ through by w′ and moving everything that depends on h to the left gives h<sub>1</sub>x + h<sub>2</sub>y + h<sub>3</sub> − u·h<sub>7</sub>x − u·h<sub>8</sub>y = u and h<sub>4</sub>x + h<sub>5</sub>y + h<sub>6</sub> − v·h<sub>7</sub>x − v·h<sub>8</sub>y = v. Both are linear in the unknowns, so each correspondence i contributes a 2×8 block A<sub>i</sub> and a 2×1 block b<sub>i</sub>. Stacking all n of them gives the system Ah = b.
+                        Multiplying u = u′/w′ and v = v′/w′ through by w′ and moving everything that depends on h to the left gives h<sub>1</sub>x + h<sub>2</sub>y + h<sub>3</sub> − u·h<sub>7</sub>x − u·h<sub>8</sub>y = u and h<sub>4</sub>x + h<sub>5</sub>y + h<sub>6</sub> − v·h<sub>7</sub>x − v·h<sub>8</sub>y = v. Both are linear in the unknowns, so each correspondence i contributes a 2x8 block A<sub>i</sub> and a 2x1 block b<sub>i</sub>. Stacking all n of them gives the system Ah = b.
                     </p>
                     <div class="figure-grid cols-1">
                         <figure class="filter">
@@ -136,12 +136,12 @@ w' = h7·x + h8·y + 1</code></pre>
 [ xn  yn  1   0   0   0  -un·xn  -un·yn ]       [ h6 ]       [ un ]
 [  0   0  0  xn  yn   1  -vn·xn  -vn·yn ]       [ h7 ]       [ vn ]
                                                 [ h8 ]
-             A : 2n × 8                        h : 8 × 1    b : 2n × 1</code></pre>
+             A : 2n x 8                        h : 8 x 1    b : 2n x 1</code></pre>
                             <figcaption>the system solved in computeH</figcaption>
                         </figure>
                     </div>
                     <p>
-                        With 4 points A is square and the system solves exactly; with more it is overdetermined, so <code>computeH</code> solves it in the least-squares sense and reshapes [h<sub>1</sub> … h<sub>8</sub>, 1] into the 3×3 matrix H. 
+                        With 4 points A is square and the system solves exactly; with more it is overdetermined, so <code>computeH</code> solves it in the least-squares sense and reshapes [h<sub>1</sub> … h<sub>8</sub>, 1] into the 3x3 matrix H. 
                     </p>
                     <p>
                         The main thing I took away from this part was how much simpler and faster it is to project many points at once, stacking them into a matrix and multiplying by H in one shot instead of looping, which I leaned on heavily for the warps below.
@@ -162,7 +162,7 @@ w' = h7·x + h8·y + 1</code></pre>
                         I implemented two different warps, <code>warpImageNearestNeighbor</code> and <code>warpImageBilinear</code>. Both warps use inverse mapping so the output has no holes. I push the four corners of the input through H to get the output bounding box, build a grid of every output pixel (u, v, 1), multiply by H<sup>−1</sup>, and divide by the third coordinate to get source coordinates (x, y). Only pixels whose (x, y) lands inside the input image are filled so that everything else stays black.
                     </p>
                     <p>
-                        Nearest neighbor (<code>warpImageNearestNeighbor</code>) rounds (x, y) to the closest pixel and copies it. Bilinear (<code>warpImageBilinear</code>) takes the 2×2 neighborhood at x, y and averages the four pixels.
+                        Nearest neighbor (<code>warpImageNearestNeighbor</code>) rounds (x, y) to the closest pixel and copies it. Bilinear (<code>warpImageBilinear</code>) takes the 2x2 neighborhood at x, y and averages the four pixels.
                     </p>
                     <p>
                         <strong>Rectification.</strong> To test the warp on a single image, I clicked the four corners of a rectangular object and mapped them to a hand-chosen rectangle. The output canvas is the bounding box of the whole warped photo, so the wall around the target gets warped along with it. The order of the target corners matters: pairing the clicked corners with the square in a different order flips or rotates the rectified result, so the same code can flip an image just by reordering four coordinates.
@@ -172,7 +172,7 @@ w' = h7·x + h8·y + 1</code></pre>
 <pre><code>H = [  0.4279    0.0684   -463.14 ]
     [ -0.0083    0.4947   -720.58 ]
     [ -1.0e-06   1.3e-04     1.00 ]</code></pre>
-                            <figcaption>poster, four corners mapped to a 1000×1000 square</figcaption>
+                            <figcaption>poster, four corners mapped to a 1000x1000 square</figcaption>
                         </figure>
                     </div>
                     <div class="figure-grid cols-3">
@@ -194,7 +194,7 @@ w' = h7·x + h8·y + 1</code></pre>
 <pre><code>H = [  0.2003    0.0007   -177.40 ]
     [ -0.0490    0.2070   -186.55 ]
     [ -1.1e-04   1.4e-05     1.00 ]</code></pre>
-                            <figcaption>painting, four corners mapped to a 1000×800 rectangle</figcaption>
+                            <figcaption>painting, four corners mapped to a 1000x800 rectangle</figcaption>
                         </figure>
                     </div>
                     <div class="figure-grid cols-3">
@@ -344,6 +344,125 @@ w' = h7·x + h8·y + 1</code></pre>
                         <figure>
                             <img src="images/set4_crop_trees.jpg" width="500" height="500">
                             <figcaption>the trees in front of the house are doubled as well</figcaption>
+                        </figure>
+                    </div>
+                </section>
+
+                <!-- ================================================================ -->
+                <h2 class="group-title">Part B: Feature Matching for Autostitching</h2>
+                <p>
+                    Part B replaces the hand-clicked correspondences from Part A with features that are found and matched automatically. I followed a simplified version of the paper “Multi-Image Matching using Multi-Scale Oriented Patches” by Brown et al.
+                </p>
+
+                <section class="part">
+                    <h2 class="part-title">B.1: Harris Corner Detection</h2>
+                    <p>
+                        I used the provided <code>harris.py</code>, which runs a Harris point detector. On its own it returns around 30,000 corners per image, which is far too many to describe and match.
+                    </p>
+                    <p>
+                        Adaptive non-maximal suppression (ANMS) picks a max number of 500 points that are both strong and spread out. For each corner i, I compute a suppression radius r<sub>i</sub>: the distance to the closest corner j that is sufficiently stronger, meaning f(x<sub>i</sub>) &lt; c<sub>robust</sub> · f(x<sub>j</sub>) with c<sub>robust</sub> = 0.9. The result is 500 corners that cover the image evenly instead of piling up on the most textured region.
+                    </p>
+                    <div class="figure-grid compact">
+                        <figure>
+                            <img src="images/set1_img2_all_harris.jpg" width="723" height="985">
+                            <figcaption>set 1, image 2: all 29,919 harris corners</figcaption>
+                        </figure>
+                        <figure>
+                            <img src="images/set1_img2_anms.jpg" width="723" height="985">
+                            <figcaption>set 1, image 2: the 500 corners kept by ANMS</figcaption>
+                        </figure>
+                    </div>
+                    <div class="figure-grid cols-3">
+                        <figure>
+                            <img src="images/set1_img1_anms.jpg" width="723" height="985">
+                            <figcaption>ANMS corners, set 1 image 1</figcaption>
+                        </figure>
+                        <figure>
+                            <img src="images/set5_img1_anms.jpg" width="723" height="985">
+                            <figcaption>ANMS corners, set 2 image 1</figcaption>
+                        </figure>
+                        <figure>
+                            <img src="images/set4_img1_anms.jpg" width="723" height="985">
+                            <figcaption>ANMS corners, set 3 image 1</figcaption>
+                        </figure>
+                    </div>
+                </section>
+
+                <section class="part">
+                    <h2 class="part-title">B.2: Feature Descriptor Extraction</h2>
+                    <p>
+                        For each ANMS corner I take the 40x40 window around it in the grayscale image, blur it with a Gaussian (σ = 2), and sample every 5th pixel to get a 8x8 patch. Sampling from the larger blurred window is what makes the descriptor forgiving of small misalignments since an 8x8 crop at full resolution would be far too sensitive. Each patch is normalized by subtracting its mean and dividing by its standard deviation and then flattened into a 1x64 vector.
+                    </p>
+                    <div class="figure-grid cols-1">
+                        <figure>
+                            <img src="images/set1_img2_feature_descriptors.jpg" width="1484" height="629">
+                            <figcaption>five random features from set 1, image 2: the 40x40 window (top) and its normalized 8x8 descriptor (bottom)</figcaption>
+                        </figure>
+                    </div>
+                </section>
+
+                <section class="part">
+                    <h2 class="part-title">B.3: Feature Matching</h2>
+                    <p>
+                        To match features I compute the distance between every descriptor in image 1 and every descriptor in image 2 (using <code>dist2</code>), and for each feature in image 1 find its first and second nearest neighbors in image 2. Following Lowe, I keep a match only if the ratio of the first to the second nearest-neighbor distance is below 0.6. The idea witht this is that a real match should be much closer than any other candidate, so a ratio near 1 means the feature is ambiguous (since the first and second are too similar). Out of 500 features per image, the ratio test leaves 169 matches for set 1, 163 for set 2, and 109 for set 3.
+                    </p>
+                    <div class="figure-grid cols-1">
+                        <figure>
+                            <img src="images/set1_matches.jpg" width="1600" height="1067">
+                            <figcaption>set 1: 169 matches after the ratio test</figcaption>
+                        </figure>
+                    </div>
+                    <div class="figure-grid cols-1">
+                        <figure>
+                            <img src="images/set5_matches.jpg" width="1600" height="1067">
+                            <figcaption>set 2: 163 matches after the ratio test</figcaption>
+                        </figure>
+                    </div>
+                    <div class="figure-grid cols-1">
+                        <figure>
+                            <img src="images/set4_matches.jpg" width="1600" height="1067">
+                            <figcaption>set 3: 109 matches after the ratio test</figcaption>
+                        </figure>
+                    </div>
+                </section>
+
+                <section class="part">
+                    <h2 class="part-title">B.4: RANSAC for Robust Homography</h2>
+                    <p>
+                        Even after the ratio test some matches are wrong, and because least squares minimizes squared error, a single bad match can really effect the homography. So I fit H with 4-point RANSAC. For 500 iterations I pick 4 random matches, compute H exactly from them with <code>computeH</code> from Part A, project every matched point from image 1 into image 2, and count how many land within 4 pixels of their match. I keep the H with the largest inlier set. RANSAC kept 95 of 169 matches for set 1, 108 of 163 for set 2, and 71 of 109 for set 3.
+                    </p>
+                    
+                    <p>
+                        Finally I pass the RANSAC homography to the same mosaic code from Part A. Below, each manual mosaic from Part A is on the left and the automatic one is on the right. For set 1 the ghosting has really reduced in the automatic feature matching version. For set 2, the automatic result is pretty similar. Set 3 is best improvement, its automatic mosaic is much cleaner than my manual one, with less doubling on the light pole and the trees.
+                    </p>
+                    <div class="figure-grid compact">
+                        <figure>
+                            <img src="images/set1_stitched_v2.jpg" width="1363" height="1600">
+                            <figcaption>set 1: manual correspondences</figcaption>
+                        </figure>
+                        <figure>
+                            <img src="images/set1_stitchedB.jpg" width="1378" height="1600">
+                            <figcaption>set 1: automatic</figcaption>
+                        </figure>
+                    </div>
+                    <div class="figure-grid compact">
+                        <figure>
+                            <img src="images/set5_stitched.jpg" width="1439" height="1600">
+                            <figcaption>set 2: manual correspondences</figcaption>
+                        </figure>
+                        <figure>
+                            <img src="images/set5_stitchedB.jpg" width="1443" height="1600">
+                            <figcaption>set 2: automatic</figcaption>
+                        </figure>
+                    </div>
+                    <div class="figure-grid compact">
+                        <figure>
+                            <img src="images/set4_stitched.jpg" width="1373" height="1600">
+                            <figcaption>set 3: manual correspondences</figcaption>
+                        </figure>
+                        <figure>
+                            <img src="images/set4_stitchedB.jpg" width="1377" height="1600">
+                            <figcaption>set 3: automatic</figcaption>
                         </figure>
                     </div>
                 </section>
