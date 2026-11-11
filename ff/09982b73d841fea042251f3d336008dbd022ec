@@ -1,0 +1,14 @@
+cs180/proj4/index.html
+  h_ce850cccf51adc 49,104,124,139,144,165,175,197,350-468
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ff09982b73d841fea042251f3d336008dbd022ec",
+  "prompts": {},
+  "humans": {
+    "h_ce850cccf51adc": {
+      "author": "tanmayi <tanmayi.dasari@gmail.com>"
+    }
+  }
+}
