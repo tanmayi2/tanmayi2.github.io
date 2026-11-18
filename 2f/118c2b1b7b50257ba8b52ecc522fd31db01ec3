@@ -1,0 +1,14 @@
+index.html
+  h_ce850cccf51adc 20,23,26,29
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2f118c2b1b7b50257ba8b52ecc522fd31db01ec3",
+  "prompts": {},
+  "humans": {
+    "h_ce850cccf51adc": {
+      "author": "tanmayi <tanmayi.dasari@gmail.com>"
+    }
+  }
+}
